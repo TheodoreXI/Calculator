@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shunting Yard Visualizer</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+    h2 { margin-top: 20px; }
+    .box { border: 2px solid #333; padding: 10px; margin: 10px 0; min-height: 40px; }
+    .token { display: inline-block; padding: 4px 8px; margin: 2px; background: #fff; border: 1px solid #ccc; border-radius: 4px; }
+    button { margin: 10px 5px; padding: 8px 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Shunting Yard Algorithm Visualizer</h1>
+  <p>Enter an infix expression (e.g., <code>3+4*2/(1-5)</code>)</p>
+  <input type="text" id="expr" value="3+4*2/(1-5)" size="30">
+  <button onclick="start()">Start</button>
+  <button onclick="step()">Next Step</button>
+  <button onclick="runAll()">Run to End</button>
+
+  <h2>Tokens Left</h2>
+  <div id="tokens" class="box"></div>
+
+  <h2>Output Queue</h2>
+  <div id="output" class="box"></div>
+
+  <h2>Operator Stack</h2>
+  <div id="stack" class="box"></div>
+
+  <h2>Final Postfix</h2>
+  <div id="postfix" class="box"></div>
+
+  <script>
+    let tokens = [];
+    let output = [];
+    let stack = [];
+    let index = 0;
+
+    function tokenize(expr) {
+      return expr.match(/\d+|[+\-*/^()]|\S/g) || [];
+    }
+
+    function prec(op) {
+      if (op === '+' || op === '-') return 1;
+      if (op === '*' || op === '/') return 2;
+      if (op === '^') return 3;
+      return 0;
+    }
+
+    function isLeftAssoc(op) {
+      return op !== '^'; // ^ is right-associative
+    }
+
+    function start() {
+      let expr = document.getElementById("expr").value.replace(/\s+/g, "");
+      tokens = tokenize(expr);
+      output = [];
+      stack = [];
+      index = 0;
+      render();
+    }
+
+    function step() {
+      if (index >= tokens.length) {
+        while (stack.length) output.push(stack.pop());
+        document.getElementById("postfix").innerHTML = output.map(t => `<span class="token">${t}</span>`).join("");
+        render();
+        return;
+      }
+      let token = tokens[index++];
+      if (!isNaN(token)) {
+        output.push(token);
+      } else if ("+-*/^".includes(token)) {
+        while (stack.length) {
+          let top = stack[stack.length-1];
+          if ("+-*/^".includes(top) &&
+             ((isLeftAssoc(token) && prec(token) <= prec(top)) ||
+              (!isLeftAssoc(token) && prec(token) < prec(top)))) {
+            output.push(stack.pop());
+          } else break;
+        }
+        stack.push(token);
+      } else if (token === "(") {
+        stack.push(token);
+      } else if (token === ")") {
+        while (stack.length && stack[stack.length-1] !== "(") {
+          output.push(stack.pop());
+        }
+        stack.pop(); // remove "("
+      }
+      render();
+    }
+
+    function runAll() {
+      while (index < tokens.length) step();
+      step(); // flush remaining stack
+    }
+
+    function render() {
+      document.getElementById("tokens").innerHTML =
+        tokens.slice(index).map(t => `<span class="token">${t}</span>`).join("");
+      document.getElementById("output").innerHTML =
+        output.map(t => `<span class="token">${t}</span>`).join("");
+      document.getElementById("stack").innerHTML =
+        stack.map(t => `<span class="token">${t}</span>`).join("");
+    }
+  </script>
+</body>
+</html>
