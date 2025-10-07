@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 typedef enum precedence {
-    add=1, multi=2, expo=3
+    para=-1, add=1, multi=2, expo=3
 } pre;
 
 typedef struct op
@@ -81,7 +81,7 @@ pre ft_order(char c)
         return (add);
     else if (c == '*' || c == '/' || c == '%')
         return (multi);
-    return (-1);
+    return (para);
 }
 
 void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
@@ -105,7 +105,7 @@ void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
         else
         {
             my_order = ft_order(c);
-            if ((*h_stack)->order > my_order || (*h_stack)->order == my_order)
+            if (c != ')' && c != '(' && ((*h_stack)->order > my_order || (*h_stack)->order == my_order))
             {
                 n_new = ft_new_que();
                 if (!n_new)
@@ -131,18 +131,15 @@ void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
                     pop_num(h_que, n_new);
                     (*h_stack) = (*h_stack)->next;
                 }
-                printf("this is op %c\n", (*h_stack)->operation);
                 (*h_stack) = (*h_stack)->next;
             }
             else
             {
-                printf("thios is it \n");
                 new = ft_new_stack();
                 if (!new)
                     return ;
                 new->operation = c;
                 new->order = ft_order(c);
-                printf("this is new op %c\n", new->operation);
                 pop_stack(h_stack, new);
             }
         }
@@ -195,6 +192,13 @@ int count_para(char *s)
     return (0);
 }
 
+int is_op(char c)
+{
+    if (c == '+' || c == '-' || c == '*' || c == '/')
+        return (1);
+    return (0);
+}
+
 void ft_parsing(char *s)
 {
     int i = 0;
@@ -211,8 +215,13 @@ void ft_parsing(char *s)
     {
         if (s[i] == '(' || s[i] == ')')
             c = s[i];
-        if (s[i] == '+' || s[i] == '*')
+        if (is_op(s[i]))
         {
+            if (is_op(s[i+1]))
+            {
+                printf("multiple operators\n");
+                exit (1);
+            }
             if (s[i+1] == ')' || s[i+1] == '(')
                 return (printf("Unexpected token '%c'\n", s[i+1]), exit(1));
         }
@@ -300,30 +309,35 @@ void    post_fix(t_num **h_que)
     t_num *tmp = *h_que;
     t_num *last = NULL;
     while (tmp->next)
-    {
         tmp = tmp->next;
-    }
     last = tmp;
     lent = ft_lent(*h_que);
-    while (lent > 0)
+    if (lent == 1)
+        result = (*h_que)->n;
+    else
     {
-        if (last->n != -1)
+        while (lent > 0)
         {
-            pop_to_stack(&head, last->n);
+            if (last->n != -1)
+                pop_to_stack(&head, last->n);
+            else
+            {
+                first = (head->next->n);
+                second = head->n;
+                if (last->operation == '*')
+                    result = first * second;
+                else if (last->operation == '+')
+                    result = first + second;
+                else if (last->operation == '-')
+                    result = first - second;
+                else if (last->operation == '/')
+                    result = first / second;
+                head = head->next->next;
+                pop_to_stack(&head, result);
+            }
+            last = last->prev;
+            lent--;
         }
-        else
-        {
-            first = (head->next->n);
-            second = head->n;
-            if (last->operation == '*')
-                result = first * second;
-            else if (last->operation == '+')
-                result = first + second;
-            head = head->next->next;
-            pop_to_stack(&head, result);
-        }
-        last = last->prev;
-        lent--;
     }
     printf("result: %d\n", result);
 }
@@ -370,10 +384,10 @@ void    ft_vbc(char *s)
         }
         i++;
     }
-    // print(h_que);
-    // print_stack(h_stack);
-    // pop_everything(&h_stack, &h_que);
-    // post_fix(&h_que);
+    print_stack(h_stack);
+    print(h_que);
+    pop_everything(&h_stack, &h_que);
+    post_fix(&h_que);
 }
 
 int main(int ac, char *argv[])
