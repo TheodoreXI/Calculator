@@ -81,12 +81,15 @@ pre ft_order(char c)
         return (add);
     else if (c == '*' || c == '/' || c == '%')
         return (multi);
+    return (-1);
 }
 
 void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
 {
     t_op *new = NULL;
+    t_op *tmp = NULL;
     t_num *n_new = NULL;
+    t_num *temp = NULL;
     pre my_order;
     if (check == 1)
     {
@@ -114,11 +117,12 @@ void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
                 if (!new)
                     return ;
                 new->operation = c;
+                new->order = ft_order(c);
                 pop_stack(h_stack, new);
             }
             else if (c == ')')
             {
-                while ((*h_stack)->operation != '(')
+                while ((*h_stack) && (*h_stack)->operation != '(')
                 {
                     n_new = ft_new_que();
                     if (!n_new)
@@ -127,15 +131,18 @@ void    insert(t_op **h_stack, t_num **h_que, int check, char c, int number)
                     pop_num(h_que, n_new);
                     (*h_stack) = (*h_stack)->next;
                 }
+                printf("this is op %c\n", (*h_stack)->operation);
                 (*h_stack) = (*h_stack)->next;
             }
             else
             {
+                printf("thios is it \n");
                 new = ft_new_stack();
                 if (!new)
                     return ;
                 new->operation = c;
                 new->order = ft_order(c);
+                printf("this is new op %c\n", new->operation);
                 pop_stack(h_stack, new);
             }
         }
@@ -354,7 +361,7 @@ void    ft_vbc(char *s)
         if (isdigit(s[i]))
         {
             num = ft_atoi(&s[i]);
-            insert(&h_stack, &h_que, 2, c, num);
+            insert(&h_stack, &h_que, 2, 0, num);
         }
         else
         {
@@ -363,10 +370,10 @@ void    ft_vbc(char *s)
         }
         i++;
     }
-    print(h_que);
-    print_stack(h_stack);
-    pop_everything(&h_stack, &h_que);
-    post_fix(&h_que);
+    // print(h_que);
+    // print_stack(h_stack);
+    // pop_everything(&h_stack, &h_que);
+    // post_fix(&h_que);
 }
 
 int main(int ac, char *argv[])
